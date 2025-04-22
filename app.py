@@ -47,21 +47,8 @@ try:
             metro_depts = ([f"{i:02d}" for i in range(1, 96)] + ['2A', '2B'])
             communes_gdf = communes_gdf[communes_gdf['dept'].isin(metro_depts)]
         
-        # Connexion à la base de données
-        conn = psycopg2.connect(
-            host=os.getenv('DB_HOST'),
-            port=os.getenv('DB_PORT'),
-            database=os.getenv('DB_NAME'),
-            user=os.getenv('DB_USER'),
-            password=os.getenv('DB_PASSWORD')
-        )
-        
-        # Chargement des données fibre
-        query = "SELECT * FROM reseau.techno_internet_com_2024_clean"
-        fibre_df = pd.read_sql(query, conn)
-        
-        # Fermeture de la connexion
-        conn.close()
+        # Chargement des données fibre depuis le CSV
+        fibre_df = pd.read_csv("https://raw.githubusercontent.com/ThibautNguyen/carte-fibre-france/main/data/fibre_data.csv")
         
         # Fusion et optimisation des données
         communes_gdf = communes_gdf.merge(
