@@ -26,7 +26,7 @@ try:
     # Chargement des données
     with st.spinner("Chargement et optimisation des données..."):
         # Téléchargement et chargement des données géographiques
-        url = "https://data-interne.ademe.fr/data-fair/api/v1/datasets/geo-contours-communes/data-files/GEO_Contours_Communes.geojson"
+        url = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson"
         
         with tempfile.TemporaryDirectory() as temp_dir:
             # Téléchargement du fichier
@@ -35,21 +35,19 @@ try:
             
             # Lecture du fichier GeoJSON
             communes_gdf = gpd.read_file(json_path)
-            
             # Renommer les colonnes pour correspondre à notre structure
             communes_gdf = communes_gdf.rename(columns={
-                'DCOE_C_COD': 'insee_com',
-                'DCOE_L_LIB': 'nom',
-                'DDEP_C_COD': 'dept'
+                'code': 'insee_com',
+                'nom': 'nom'
             })
-            
-            # Filtrer pour garder uniquement la France métropolitaine
-            metro_depts = ([f"{i:02d}" for i in range(1, 96)] + ['2A', '2B'])
-            communes_gdf = communes_gdf[communes_gdf['dept'].isin(metro_depts)]
         
         # Chargement des données fibre depuis le CSV
         fibre_df = pd.read_csv("https://raw.githubusercontent.com/ThibautNguyen/carte-fibre-france/main/data/fibre_data.csv")
         
+        # Forcer le type des codes INSEE en chaîne de caractères
+        communes_gdf['insee_com'] = communes_gdf['insee_com'].astype(str)
+        fibre_df['code_insee'] = fibre_df['code_insee'].astype(str)
+
         # Fusion et optimisation des données
         communes_gdf = communes_gdf.merge(
             fibre_df[["code_insee", "pct_fibre", "nb_locaux"]],
@@ -58,7 +56,13 @@ try:
             how="left"
         )
         communes_gdf["pct_fibre"] = communes_gdf["pct_fibre"].fillna(0)
-        
+
+        # Correction du nom de colonne après fusion si besoin
+        if 'insee_com_x' in communes_gdf.columns:
+            communes_gdf = communes_gdf.rename(columns={'insee_com_x': 'insee_com'})
+        if 'insee_com_y' in communes_gdf.columns:
+            communes_gdf = communes_gdf.rename(columns={'insee_com_y': 'insee_com'})
+
     # Création de la carte
     initial_view_state = pdk.ViewState(
         latitude=46.5,
